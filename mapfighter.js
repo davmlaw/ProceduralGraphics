@@ -56,12 +56,34 @@ var player = new Particle(width/2, height/2, '#11FF33');
 
 function setup() {
 	setupOverlapping("main-stage");
+	setupControls();
 	setupBackground();
 	setupCanvas();
 	setupInput();
 	setupWorld();
 }
 
+function setupControls() {
+	var goButton = document.getElementById("go-button");
+	var address = document.getElementById("address");
+	
+	var changeMapCenter = function() {
+		if (map) {
+			var geocoder = new google.maps.Geocoder();
+			geocoder.geocode({ address: address.value }, function(results, status) {
+				if (results.length >= 1 && results[0].geometry) {
+					var latLong = results[0].geometry.location;
+					map.setCenter(latLong);
+				}
+			});
+		}
+	};
+	goButton.onclick = changeMapCenter;
+	address.onkeydown = function(event) {
+		if (event.keyCode == 13)
+			changeMapCenter();
+	};
+}
 
 function setupBackground() {
 	document.getElementById("map_canvas").style.backgroundColor = "#11ee11";
@@ -171,7 +193,7 @@ function setupWorld() {
 			}
 			
 			p.addUpdater(changeRadius(.9));
-			p.addUpdater(countdown(explode, 3000));
+			p.addUpdater(countdown(explode, 1800));
 		}
 		
 		
@@ -381,7 +403,7 @@ function drawentities(time, entities) {
 function initialize() {
 	var myLatlng = new google.maps.LatLng(-34.911555,138.600082);
 	var myOptions = {
-		zoom: 16,
+		zoom: 17,
 		center: myLatlng,
 		mapTypeId: google.maps.MapTypeId.SATELLITE,
 		mapTypeControl: false,

@@ -41,7 +41,7 @@ function handleKeyUp(event)
 }
 
 function stopPropagation(keyCode, event) {
-	if (keyCode == 32 || keyCode == 37 || keyCode == 39) {
+	if (keyCode == 37 || keyCode == 39) {
 		if (event.preventDefault) event.preventDefault();
 		if (event.stopPropagation) event.stopPropagation();
 		return false;
