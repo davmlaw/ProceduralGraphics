@@ -213,3 +213,25 @@ function HexToR(h) {return parseInt((cutHex(h)).substring(0,2),16)}
 function HexToG(h) {return parseInt((cutHex(h)).substring(2,4),16)}
 function HexToB(h) {return parseInt((cutHex(h)).substring(4,6),16)}
 function cutHex(h) {return (h.charAt(0)=="#") ? h.substring(1,7):h}
+
+
+function circle_alpha(canvas, fadeFactor) {
+	var ff = fadeFactor || 1;
+	var canvas_ctx = canvas.getContext ("2d");
+	var canvas_id = canvas_ctx.getImageData (0, 0, canvas.width, canvas.height);
+	var pixels = canvas_id.data;
+	var cx = canvas.width/2;
+	var cy = canvas.height/2;
+	for (var i = 0; i < pixels.length; i += 4) {
+		var p = i/4;
+		var x = p % canvas.width;
+		var y = p / canvas.width;
+		var xd = cx-x;
+		var yd = cy-y;
+		var radius = Math.sqrt(xd*xd + yd*yd);
+		radius = vary(radius, radius*.05);
+		pixels[i + 3] *= 1- radius/cx;
+	}
+	canvas_ctx.putImageData (canvas_id, 0, 0);
+}
+
