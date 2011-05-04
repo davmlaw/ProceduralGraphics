@@ -1,0 +1,144 @@
+<!DOCTYPE html >
+<!--
+	By Dave Lawrence on 28 Oct 2009
+	A field full of flowers
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  <style>
+    html,body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
+  </style>
+    <title>Field of flowers</title>
+    <script type="text/javascript">
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+				var frame_time = 100;
+				var angle = 0.0;
+				var count = 0;
+				var numFlowers = width / 4;
+	
+				var flowers = [];
+        var ctx;
+				var flowerId = 0;
+				
+				function Flower(x, y, centreColor, centreRadius, petal) {
+					this.x = x;
+					this.y = y;
+					this.centreColor = centreColor;
+					this.centreRadius = centreRadius;
+					this.petal = petal;
+					this.flowerId = flowerId++;
+				}
+
+				function Petal(fillStyle, length, width) {
+					this.fillStyle = fillStyle;
+					this.length = length;
+					this.width = width;
+				}
+				
+
+				// write out canvas as we have to put width/height inline in HTML, CSS will just scale pixels
+        document.write('<canvas id="canvas" width=' + width + ' height=' + height + ' />');
+				document.write('<canvas id="scratch" style="display: none" width=' + width + ' height=' + height + ' />');
+
+        function setup() {
+            ctx = document.getElementById("canvas").getContext("2d");
+
+						for(i=0 ; i<numFlowers ; ++i) {
+							var x = Math.random() * width;
+							var y = Math.random() * height;
+							//var x = width/2;
+							//var y = height/2;
+	
+								/*
+								var length = 100;
+								var lineargradient = ctx.createLinearGradient(0,0, length, 0);
+								lineargradient.addColorStop(0, '#fff441');
+								lineargradient.addColorStop(1, '#fffeba');
+								var petal = new Petal(lineargradient, length, 70); // fffc00 = nice
+								flowers.push(new Flower(x, y, '#fffc22', petal));
+								*/
+
+								var size = 30 + Math.random() * 10;
+
+								var petal = new Petal('#ffffff', size, size * .7); // fffc00 = nice
+								flowers.push(new Flower(x, y, '#fffc22', size * .4, petal));
+						}
+
+            //setInterval(clock_tick, frame_time);
+ 						draw();
+				}
+
+        function clock_tick() {
+					count += 0.05;
+        	draw();
+        }
+
+        function draw() {
+        		var rad = 60;
+        	
+					  // draw background
+					  ctx.fillStyle = '#28d22c';
+					  ctx.fillRect(0,0, width, height);
+
+					  for (i=0; i<flowers.length ; ++i){
+							var f = flowers[i];
+					    ctx.save();
+							ctx.translate(f.x, f.y);
+							//ctx.rotate(angle);
+							//angle += 0.02;
+							//minRad + Math.sin(count) * rad
+							
+							drawFlower(f);
+					    ctx.restore();
+					  }
+
+/*					  
+					  var imageData = ctx.getImageData(width/2, height/2, 100, 100);
+					  ctx.putImageData(imageData, 0, 0);
+*/			  
+					  
+        }
+
+				function drawFlower(f){
+					var numPetals = 13;
+					var rot = Math.PI * 2 / numPetals;
+
+					for (p=0 ; p<numPetals ; ++p) {
+				    ctx.save();
+				    ctx.rotate( p * rot );
+						ctx.translate(f.centreRadius/2, 0);
+						drawPetal(f.petal);
+				    ctx.restore();
+				  }
+				  
+ 					// draw centre bit
+					ctx.fillStyle = f.centreColor;
+					ctx.beginPath();
+					ctx.arc(0, 0, f.centreRadius, 0, Math.PI*2, true);
+					ctx.fill();
+					ctx.stroke();
+				}
+
+				function drawPetal(petal) {
+					ctx.fillStyle = petal.fillStyle;
+					ctx.beginPath();
+					ctx.bezierCurveTo(0, 0, petal.length/2, -petal.width/2, petal.length, 0);
+					ctx.bezierCurveTo(petal.length, 0, petal.length/2, petal.width/2, 0, 0);
+					ctx.fill();
+					ctx.stroke();
+
+					// mini petal in the middle
+					ctx.lineWidth /= 5;
+					ctx.beginPath();
+					ctx.bezierCurveTo(0, 0, petal.length/2, -petal.width/4, petal.length, 0);
+					ctx.bezierCurveTo(petal.length, 0, petal.length/2, petal.width/4, 0, 0);
+					ctx.stroke();
+				}
+    </script>
+  </head>
+	<body onload="setup()">
+
+  </body>
+</html>
+

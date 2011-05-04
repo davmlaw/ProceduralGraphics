@@ -1,0 +1,211 @@
+<!DOCTYPE html >
+<!--
+	By Dave Lawrence on 30 Nov 2009
+	Animation code - demo with CanvasPixelArray, masking and animation
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  	<style>
+    	html,body { width:100%; height:100%; marginRatio:0; padding:0; overflow:hidden; }
+		</style>
+		<title>TV demo</title>
+    <script type="text/javascript">
+        var width = window.innerWidth;
+        var height = window.innerHeight * .8;
+				var fps = 6;
+				var tv;
+        var context;
+				var picture;
+
+				// write out canvas as we have to put width/height inline in the HTML, CSS will just scale pixels
+        document.write('<canvas id="canvas" width=' + width + ' height=' + height + '></canvas>');
+
+        function setup() {
+            context = document.getElementById("canvas").getContext("2d");
+            context.fillStyle = "#FFFFFF";
+						context.strokeStyle = "#000000";
+					  context.fillRect(0,0, width, height);
+						tv = new TV(context, width/5);
+						tv.x = width/2;
+						tv.y = height/2;
+						setInterval(draw, 1000 / fps);
+						picture = document.getElementById("hidden-image");
+				}
+				
+				function updateImage() {
+						var imgAddress = document.getElementById("image-address").value;
+						picture.src = imgAddress;
+				}
+
+				function draw() {
+						tv.draw(context);
+				}
+				
+				function TV(ctx, w) {
+					this.x = 0;
+					this.y = 0;
+					this.width  = w;
+					this.marginRatio = 0.05;
+					this.panelRatio = 0.15;
+					this.aspectRatio = 8/5;
+					this.screenWidth = w * (1 - this.marginRatio * 3 - this.panelRatio);
+					this.screenHeight = this.screenWidth / this.aspectRatio;
+					this.screenXOffset = -w / 2 + this.marginRatio * w + this.screenWidth / 2;
+					this.height = (w * this.marginRatio * 2 + this.screenWidth) / this.aspectRatio;
+					this.pixels = new Pixels(ctx, this.screenWidth, this.screenHeight);
+					this.draw = function(context) {
+							context.save();
+							context.translate(this.x, this.y);
+							this.drawFrame(context);
+
+							context.translate(this.screenXOffset, 0);
+							this.drawScreenBg(context);
+							this.drawClip(context);
+							if (Math.random() < .3 && picture.width > 0) {
+									this.drawPicture(context);
+							} else {
+								this.drawStatic(context);
+							}
+							context.restore();
+					}
+					this.drawFrame = function(context) {
+							context.save();
+							var hw = this.width/2;
+							var hh = this.height/2
+							
+							// draw outside of TV
+							context.fillStyle = "#760c0c";
+							context.beginPath();
+							context.rect(-hw, -hh, this.width, this.height);
+							context.fill();
+							context.stroke();
+							
+							var panelMidpoint = this.width/2 - this.width * (this.marginRatio + this.panelRatio/2);
+							var panelWidth = this.panelRatio * this.width;
+							
+							// antenna
+							var antennaX = panelMidpoint;
+							var antennaY = this.height * .8;
+							context.beginPath();
+							context.moveTo(antennaX, -hh);
+							context.lineTo(antennaX - this.width / 20, -hh - antennaY);
+							context.moveTo(antennaX, -hh);
+							context.lineTo(antennaX + this.width / 20, -hh - antennaY);
+							context.stroke();
+
+							var hsw = this.screenWidth/2;
+							var hsh = this.screenHeight/2
+							
+							// panel
+							context.fillStyle = "#a98666";
+							context.beginPath();
+							context.rect(panelMidpoint - panelWidth/2, -hsh, panelWidth, this.screenHeight);
+							context.fill();
+							context.stroke();
+
+							context.fillStyle = "#000000";
+							context.beginPath();
+							context.arc(panelMidpoint, -hsh * .6, panelWidth * .3, 0, 2 * Math.PI, true);
+							context.arc(panelMidpoint, -hsh * .1, panelWidth * .3, 0, 2 * Math.PI, true);
+							context.fill();
+							context.restore();
+					}
+					
+					this.drawScreenBg = function(context) {
+							var hsw = this.screenWidth/2;
+							var hsh = this.screenHeight/2
+						
+							context.save();
+							// draw grey screen bit
+							context.fillStyle = "#e1e1e1";
+							context.beginPath();
+							context.rect(-hsw, -hsh, this.screenWidth, this.screenHeight);
+							context.fill();
+							context.stroke();
+
+							context.strokeStyle = "#aaaaaa";
+							context.beginPath();
+							context.moveTo(-hsw, -hsh);
+							context.lineTo(hsw, hsh);
+							context.stroke();
+							context.moveTo(-hsw, hsh);
+							context.lineTo(hsw, -hsh);
+							context.stroke();
+							context.restore();
+					}
+					this.drawClip = function(context) {
+							var marginRatio = 2;
+							var curve = 15;
+							var hw = this.screenWidth/2 - curve/2 - marginRatio;
+							var hh = this.screenHeight/2 - curve/2 - marginRatio;
+
+							context.beginPath();
+							context.moveTo(-hw, -hh);
+							context.bezierCurveTo(-hw, -hh, 0, -hh - curve, hw, -hh);
+							context.bezierCurveTo(hw, -hh, hw + curve * 1/this.aspectRatio, 0, hw, hh);
+							context.bezierCurveTo(hw, hh, 0, hh + curve, -hw, hh);
+							context.bezierCurveTo(-hw, hh, -hw - curve * 1/this.aspectRatio, 0, -hw, -hh);
+							//context.stroke();
+							context.clip();
+					}
+					this.drawPicture = function(context) {
+							var hsw = this.screenWidth/2;
+							var hsh = this.screenHeight/2
+
+							context.save();
+							context.drawImage(picture, -hsw, -hsh, this.screenWidth, this.screenHeight);
+							context.restore();
+					}
+					this.drawStatic = function(context) {
+							for (var y=0 ; y<this.pixels.height ; ++y) {
+								for (var x=0 ; x<this.pixels.width ; ++x) {
+									var grey = Math.random() * 255;
+									this.pixels.color.r = grey;
+									this.pixels.color.g = grey;
+									this.pixels.color.b = grey;
+									this.pixels.putPixel(x, y);
+								}
+							}
+							this.pixels.draw(context, this.x + this.screenXOffset, this.y);
+					}
+				}
+				
+
+				function Pixels(context, w,h) {
+					this.image = context.getImageData(0, 0, w, h);
+					this.width = w;
+					this.height = h;
+					this.color = new Object();
+					this.color.r = 255;
+					this.color.g = 255;
+					this.color.b = 255;
+					this.color.a = 255;
+					this.putPixel = function(x,y) {
+						var p = (y * this.image.width + x) * 4;
+						this.image.data[p] 	 = this.color.r;
+						this.image.data[p+1] = this.color.g;
+						this.image.data[p+2] = this.color.b;
+						this.image.data[p+3] = this.color.a;
+					}
+					this.draw = function(context, x, y) {
+						context.putImageData(this.image, x - this.width/2, y - this.height/2);
+					}
+				}
+
+				function rand(x) {
+					return Math.random() * x;
+				}
+				
+				function vary(x, variance) {
+					return x + variance - 2 * rand(variance);
+				}
+				
+    </script>
+  </head>
+	<body onload="setup()">
+		
+		Image address: <input id="image-address" /> <input type="button" value="change" onclick="javascript:updateImage()" />
+		<img id="hidden-image" style="display:none" src="pig.jpg">
+  </body>
+</html>
+

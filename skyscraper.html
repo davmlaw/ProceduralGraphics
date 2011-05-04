@@ -1,0 +1,164 @@
+<!DOCTYPE html >
+<!--
+	http://proceduralgraphics.blogspot.com
+	
+	By Dave Lawrence on 30 Dec 2009
+
+TODO:
+
+-make different "rows" to give a better effect.
+-make different times
+	
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  	<style>
+    	html,body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
+		</style>
+		<title></title>
+    <script type="text/javascript" src="util.js"></script>
+    <script type="text/javascript">
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+				var seed = (new Date()).getSeconds();
+				var intervalId;
+        var nightTime = 0; // 0 -> 1 how much towards night it is
+        var ctx;
+
+				// write out canvas as we have to put width/height inline in the HTML, CSS will just scale pixels
+        document.write('<canvas id="canvas" width=' + width + ' height=' + height + '></canvas>');
+
+        function setup() {
+            ctx = document.getElementById("canvas").getContext("2d");
+
+						draw(); // do the initial draw
+						var initialPause = 2;
+						setTimeout(function() { intervalId = setInterval(draw, 100) }, initialPause * 1000);
+				}
+
+				function draw() {
+						Random.seed = seed; // so city will be generated consistently each time
+						drawBackground();
+						drawForeground();
+						nightTime += 0.02;
+						if (nightTime > 1) {
+								clearInterval(intervalId);
+						}
+				}
+
+				function drawBackground() {
+						drawSky();
+						drawClouds();
+				}
+
+				function drawForeground() {
+						// draw a rectangle at the back which in effect makes a minimum height
+					  ctx.fillStyle = "#000000";
+						ctx.beginPath();
+						ctx.rect(0, 0.75 * height, width, 0.3 * height);
+						ctx.fill();
+
+						var SKYSCRAPER_W_BASE = width / 20;
+						var SKYSCRAPER_W_VARY = SKYSCRAPER_W_BASE * .25;
+						var SKYSCRAPER_H_BASE = height * .4;
+						var SKYSCRAPER_H_VARY = SKYSCRAPER_H_BASE * .7;
+						var NUM_SKYSCRAPERS = 7 * width / SKYSCRAPER_W_BASE; 
+
+						for(var i=0 ; i<NUM_SKYSCRAPERS ; ++i) {
+							var w = vary(SKYSCRAPER_W_BASE, SKYSCRAPER_W_VARY);
+							var h = vary(SKYSCRAPER_H_BASE, SKYSCRAPER_H_VARY);
+							var x = rand(width + SKYSCRAPER_W_BASE) - SKYSCRAPER_W_BASE; // so it can start off screen
+							drawSkyscraper(x, height-h, w, h);
+						}
+				}
+				
+				function drawSkyscraper(x, y, w, h) {
+						ctx.beginPath();
+						ctx.rect(x,y,w,h);
+						ctx.fill();
+
+						ctx.save();
+						ctx.fillStyle = "#FFFFFF";
+						ctx.beginPath();
+						ctx.translate(x,y);
+						var windowSpacing = w / vary(10, 2);
+						var windowSize = windowSpacing * vary(.5, .1);
+						var numFloors = Math.floor( h/windowSpacing );
+						var numWindows = Math.floor( w/windowSpacing );
+						//alert('floors = ' + numFloors + ' windows = ' + numWindows + ' winsize = ' + windowSpacing);
+
+						for (var f=0 ; f<numFloors ; ++f) {
+								var yPos = f * windowSpacing;
+								for (var i=0 ; i<numWindows ; ++i) {
+									if (!chanceIn(3)) { // 1 in 3 skip
+										// slowly turn them on
+										if (nightTime > Random.next()) {
+											ctx.rect(i * windowSpacing, yPos, windowSize, windowSize);
+										}
+									}
+								}
+						}
+						ctx.fill();
+						ctx.restore();
+				}
+				
+				function drawSky() {
+						ctx.save();
+						var lingrad = ctx.createLinearGradient(0,0,0,height);
+					  lingrad.addColorStop(0  , '#6b81ba');
+					  lingrad.addColorStop(0.6, '#e67a54');
+					  ctx.fillStyle = lingrad;
+					  ctx.fillRect(0,0,width,height);
+						if (nightTime > 0) {
+							lingrad = ctx.createLinearGradient(0,0,0,height);
+						  lingrad.addColorStop(0, 'rgba(0,0,0,' + nightTime + ')'); // black
+						  lingrad.addColorStop(1, 'rgba(35, 34, 86, ' + nightTime + ')'); // '#232256'
+						  ctx.fillStyle = lingrad;
+						  ctx.fillRect(0,0,width,height);
+						}
+					  ctx.restore();
+				}
+
+				function drawClouds() {
+						var yScale = 0.35;
+						ctx.save();
+						ctx.scale(1, yScale);
+						ctx.fillStyle = "white";
+						ctx.globalAlpha = 0.075;
+						ctx.beginPath(); // draw them all in 1 operation, so we don't get blending overlaps
+						for (var i=0 ; i<10 ; ++i) {
+							drawCloud(rand(width), rand(height / yScale));
+						}
+						ctx.fill();
+						ctx.restore();
+				}
+
+				function drawCloud(x,y) {
+						var numSpheres = vary(10, 4);
+						var noise = width / 100;
+						ctx.moveTo(x,y);
+						for (var i=0 ; i<numSpheres ; ++i) {
+							// "... clouds are not spheres ..." - Mandelbrot
+							ctx.arc(vary(x, noise * 10), vary(y, noise), noise * 5, 0, Math.PI*2, true); // sorry!
+						}
+				}
+
+				function chanceIn(x) {
+					return 1 > Random.next() * x;
+				}
+
+				function rand(x) {
+					return Random.next() * x;
+				}
+				
+				function vary(v, variance) {
+					return v + variance - 2 * rand(variance);
+				}
+			
+    </script>
+  </head>
+	<body onload="setup()">
+
+  </body>
+</html>
+

@@ -1,0 +1,168 @@
+<!DOCTYPE html >
+<!--
+	By Dave Lawrence on 23 Nov 2009
+	The idea is you're lying on your back in a forest, looking at stars.
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  	<style>
+    	html,body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
+		</style>
+		<title>Starry Night</title>
+    <script type="text/javascript">
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        var ctx;
+				// varibles to tweak
+				var branchLength = width / 7;
+				var possibleStarSides = new Array(5, 7); 
+				var numStars = width / 2;
+
+				// write out canvas as we have to put width/height inline in the HTML, CSS will just scale pixels
+        document.write('<canvas id="canvas" width=' + width + ' height=' + height + '></canvas>');
+
+        function setup() {
+            ctx = document.getElementById("canvas").getContext("2d");
+						drawBackground();
+						drawStars();
+						drawTrees();
+				}
+
+				function drawBackground() {
+						var lingrad = ctx.createLinearGradient(0,width,0,height);
+					  lingrad.addColorStop(0, '#232256');
+					  lingrad.addColorStop(1, '#143778');
+					  ctx.fillStyle = lingrad;
+					  ctx.fillRect(0,0,width,height);
+				}
+
+				function drawStars() {
+				    ctx.fillStyle = '#ffffff';
+
+					  for (j=1;j<numStars;j++){
+					    ctx.save();
+					    ctx.translate(Math.floor(Math.random()*width),
+					                  Math.floor(Math.random()*height));
+							ctx.rotate( Math.PI * 2 * Math.random() );
+							var star = new Star();
+							star.draw();
+					    ctx.restore();
+					  }
+				}
+				
+				function Star() {
+					this.radius = Math.floor(Math.random()*4.5)+0.3;
+					this.sides = possibleStarSides[ Math.floor(Math.random() * possibleStarSides.length) ];
+					this.draw = function() {
+					  ctx.save();
+					  ctx.beginPath()
+					  ctx.moveTo(this.radius,0);
+					  for (i=0;i<2*this.sides-1;i++){
+					    ctx.rotate(Math.PI/this.sides);
+					    if(i%2 == 0) {
+					      ctx.lineTo((this.radius/0.5)*0.2,0);
+					    } else {
+					      ctx.lineTo(this.radius,0);
+					    }
+					  }
+					  ctx.closePath();
+					  ctx.fill();
+					  ctx.restore();
+					}
+				}
+
+				function TreeBranch(depth, angle, scale) {
+					this.depth = depth;
+					this.angle = angle;
+					this.scale = scale;
+					this.child1 = null;
+					this.child2 = null;
+					this.draw = function() {
+						ctx.save();
+						ctx.scale(scale, scale);
+
+						ctx.beginPath();
+
+						ctx.rotate(angle);
+						ctx.moveTo(0, 0);
+						ctx.lineTo(0, branchLength);
+						ctx.translate(0, branchLength);
+
+						ctx.stroke();
+
+						if (this.child1 != null) {
+							this.child1.draw();
+						}
+						if (this.child2) {
+							this.child2.draw();
+						}
+
+						ctx.restore();
+					}
+				}
+				
+				function drawTrees() {
+					ctx.fillStyle = "#000000";
+					ctx.lineWidth = 6;
+
+					ctx.save();
+					drawSide();
+					ctx.restore();
+
+					ctx.save();
+					ctx.translate(width, 0);
+					ctx.rotate(Math.PI / 2);
+					drawSide();
+					ctx.restore();
+
+					ctx.save();
+					ctx.translate(width, height);
+					ctx.rotate(Math.PI);
+					drawSide();
+					ctx.restore();
+
+					ctx.save();
+					ctx.translate(0, height);
+					ctx.rotate(-Math.PI/2);
+					drawSide();
+					ctx.restore();
+				}
+
+
+				function drawSide() {
+					var treesPerSide =  width / 200; // eh
+					ctx.translate(0, -branchLength); // start off screen
+					ctx.save();
+					for (i=0 ; i<treesPerSide ; ++i) {
+							var root = createBranch(1, 8, 0);
+							root.draw();
+							ctx.translate(width / treesPerSide, 0);
+					}
+					ctx.restore();
+				}
+				
+				function createBranch(depth, maxDepth, angle) {
+					var branch = new TreeBranch(depth, vary(angle, 0.2), vary(0.7, 0.15));
+
+					if (branch.depth < maxDepth) {
+						branch.child1 = createBranch(depth + 1, maxDepth, 0.5);
+						branch.child2 = createBranch(depth + 1, maxDepth,-0.5);
+					}
+					return branch;
+				}
+				
+				function rand(x) {
+					return Math.random() * x;
+				}
+				
+				function vary(x, variance) {
+					return x + variance - 2 * rand(variance);
+				}
+				
+    </script>
+  </head>
+	<body onload="setup()">
+
+  </body>
+</html>
+
