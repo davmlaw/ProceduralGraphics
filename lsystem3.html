@@ -1,0 +1,54 @@
+<!DOCTYPE html >
+<!--
+	By Dave Lawrence on 17/6/2010
+	LSystem 3
+	http://proceduralgraphics.blogspost.com
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+		<title>LSystem</title>
+    <script type="text/javascript" src="util.js"></script>
+    <script type="text/javascript" src="lsystem.js"></script>
+    <script type="text/javascript" src="drawing.js"></script>
+    <script type="text/javascript" src="lsystem3_main.js"></script>
+  	<style>
+    	html,body { width:100%; height:100%; margin:0; overflow:hidden; }
+    	body { padding:20px; }
+			table, tr { width: "100%"; }
+			th { font-weight: bold; }
+			td { text-align: center; border: 0px; padding: 5px;	}
+			input#rules { width: 400px; }
+			input#angle { width: 40px; }
+			input#iterations { width: 30px; }
+			div#instructions { margin-top: 20px; }
+			div.heading { font-weight: bold; };
+		</style>
+  </head>
+	<body onload="setup()">
+		<div id="canvas"></div>
+
+		<div>
+			<input id="zoom_out" type="button" value="-" /><input id="zoom_in" type="button" value="+" /> Zoom |
+			Select to load existing l-systems: <select id="l-sys"></select>
+		</div>
+
+		<div id="info">
+			
+			<table>
+				<tr><th>Axiom</th><th>Rules</th><th>Angle</th><th>Iterations</th></tr>
+				<tr>
+					<td><input id="axiom" /></td>
+					<td><input id="rules" /></td>
+					<td><input id="angle" /></td>
+					<td><input id="dec" type="button" value="-" /><input id="iterations" /><input id="inc" type="button" value="+" /></td>
+					<td><input id="update" type="button" value="update" /></td>
+				</tr>
+			</table>
+			
+		</div>
+		
+		<div><A href="http://proceduralgraphics.blogspot.com">http://proceduralgraphics.blogspot.com</A></div>
+		
+  </body>
+</html>
+

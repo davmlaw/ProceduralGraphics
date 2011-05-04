@@ -1,0 +1,53 @@
+<!DOCTYPE html >
+<!--
+	http://proceduralgraphics.blogspot.com
+	
+	By Dave Lawrence on 24/4/2010
+	
+	Draws a cloudy blue sky with Perlin noise
+	
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  	<style>
+    	html,body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
+		</style>
+		<title></title>
+    <script type="text/javascript" src="util.js"></script>
+    <script type="text/javascript" src="drawing.js"></script>
+    <script type="text/javascript" src="perlin.js"></script>
+    <script type="text/javascript">
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        var ctx;
+				var clouds;
+
+				// write out canvas as we have to put width/height inline in the HTML, CSS will just scale pixels
+        document.write('<canvas id="canvas" width=' + width + ' height=' + height + '></canvas>');
+
+        function setup() {
+            ctx = document.getElementById("canvas").getContext("2d");
+						clouds = newCanvas(width, height);
+						perlin_noise(clouds, whiteClouds);
+						draw();
+				}
+
+				function whiteClouds() {
+					return [255, 255, 255, irand(255)];
+				}
+
+				function draw() {
+						// Blue Sky
+					  ctx.fillStyle = "#0000FF";
+					  ctx.fillRect(0,0,width,height);
+						// Clouds
+						ctx.drawImage(clouds, 0, 0);
+				}
+
+    </script>
+  </head>
+	<body onload="setup()">
+
+  </body>
+</html>
+

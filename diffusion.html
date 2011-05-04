@@ -1,0 +1,197 @@
+<!DOCTYPE html >
+<!--
+	By Dave Lawrence on 13 Dec 2009
+	Diffusion Demo
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  	<style>
+    	html,body { width:100%; height:100%; marginRatio:0; padding:0; overflow:hidden; }
+			#output { width: 100%; height="300px"; }
+		</style>
+		<title>Diffusion demo</title>
+    <script type="text/javascript">
+        var width = 300;
+        var height = 200;
+				var stepsPerFrame = 5;
+				var fps = 6;
+        var context;
+				var pixels;
+				var points = []; 
+				var numPoints = 1000;
+				var numSeeds = 1;
+				var constraints;
+
+				// write out canvas as we have to put width/height inline in the HTML, CSS will just scale pixels
+        document.write('<canvas id="canvas" width=' + width + ' height=' + height + '></canvas>');
+
+        function setup() {
+            context = document.getElementById("canvas").getContext("2d");
+            context.fillStyle = "#FFFFFF";
+						context.strokeStyle = "#000000";
+					  context.fillRect(0,0, width, height);
+						pixels = new Pixels(context, width, height);
+						pixels.fill();
+						pixels.color.r = 255;
+						pixels.color.g = 255;
+						pixels.color.b = 255;
+
+						constraints = new Constraints(width, height);
+						for (var i=0 ; i<numPoints ; ++i) {
+							var p = new Point(0, 0);
+							p.randomPosition();
+							points.push(p);
+						}
+
+						// Seed initial point
+						drawPoint(pixels.width/2, pixels.height/2);
+						setInterval(tick, 1000 / fps);
+				}
+
+				function tick() {
+						for (var i=0 ; i<stepsPerFrame ; ++i) {
+							nextStep();
+						}
+						pixels.draw(context, 0, 0);
+				}	
+				
+				function nextStep() {
+						for (var i=0 ; i<points.length ; ++i) {
+							var p = points[i];
+							p.move();
+							if (nearAnother(p.x, p.y)) {
+								drawPoint(p.x, p.y);
+								p.randomPosition();
+							}
+						}
+				}
+				
+				function nearAnother(x, y) {
+				  for(var i = -1; i <= 1; i++) {
+    				for(var j = -1; j <= 1; j++) {
+      				if(i == 0 && j == 0) {
+      					continue;  // skip self
+      				}
+      				var nx = x + i;
+      				var ny = y + j;
+      				nx = (nx < 0) ? width - 1 : (nx > width - 1) ? 0 : nx;
+      				ny = (ny < 0) ? height - 1 : (ny > height - 1) ? 0 : ny;
+      				if(pixels.nonBlackPixel(nx, ny)) {
+      					return 1;
+      				}
+    				}
+    			}
+  				return 0;
+				}
+				
+				function drawPoint(x, y) {
+					x = Math.floor(x);
+					y = Math.floor(y);
+					
+					// Expand box by +/- 10 pixels from this point
+        	constraints.allow(x-10,y-10);
+					constraints.allow(x+10,y+10);
+					pixels.putPixel(x, y);
+				}
+				
+				function Constraints(w,h) {
+					this.width = w;
+					this.height = h;
+					// Start off the opposite sides (disallowing everything)
+					this.minX = w;
+					this.maxX = 0;
+					this.minY = h;
+					this.maxY = 0;
+					this.allow = function(x,y) {
+						this.minX = (x < this.minX) ? x : this.minX;
+						this.maxX = (x > this.maxX) ? x : this.maxX;
+						this.minY = (y < this.minY) ? y : this.minY;
+						this.maxY = (y > this.maxY) ? y : this.maxY;
+
+						// constrain vs screen size
+						this.minX = (this.minX < 0) ? 0 : this.minX;
+						this.maxX = (this.maxX > w) ? w : this.maxX;
+						this.minY = (this.minY < 0) ? 0 : this.minY;
+						this.maxY = (this.maxY > h) ? h : this.maxY;
+					}
+					this.constrain = function(point) {
+						point.x = (point.x > this.minX) ? point.x : this.minX;
+        		point.x = (point.x < this.maxX) ? point.x : this.maxX;
+						point.y = (point.y > this.minY) ? point.y : this.minY;
+        		point.y = (point.y < this.maxY) ? point.y : this.maxY;
+					}
+				}
+				
+				
+				function Pixels(context, w,h) {
+					this.image = context.getImageData(0, 0, w, h);
+					this.width = w;
+					this.height = h;
+					this.color = new Object();
+					this.color.r = 0;
+					this.color.g = 0;
+					this.color.b = 0;
+					this.color.a = 255;
+					this.putPixel = function(x,y) {
+						var p = (y * this.image.width + x) * 4;
+						this.image.data[p] 	 = this.color.r;
+						this.image.data[p+1] = this.color.g;
+						this.image.data[p+2] = this.color.b;
+						this.image.data[p+3] = this.color.a;
+					}
+					// returns true if it's not black
+					this.nonBlackPixel = function(x,y) {
+						var p = (y * this.image.width + x) * 4;
+						return this.image.data[p] || this.image.data[p+1] || this.image.data[p+2];
+					}
+					this.draw = function(context, x, y) {
+						context.putImageData(this.image, x, y);
+					}
+					this.fill = function() {
+						for (var y=0 ; y<this.height ; ++y) {
+							for (var x=0 ; x<this.width ; ++x) {
+								this.putPixel(x,y);
+							}
+						}
+					}
+				}
+
+
+
+				function Point(x,y) {
+					this.x = x;
+					this.y = y;
+					this.randomPosition = function() {
+						this.x = irand(width);
+						this.y = irand(height);
+					}
+					this.move = function() {
+						if (Math.random() < 0.5) {
+							this.x += Math.random() < 0.5? 1 : -1;
+						} else {
+							this.y += Math.random() < 0.5? 1 : -1;
+						}
+						
+						// Remain on screen
+						constraints.constrain(this);
+					}
+				}
+
+				function irand(x) {
+					return Math.floor( Math.random() * x );
+				}
+
+				function rand(x) {
+					return Math.random() * x;
+				}
+				
+				function vary(x, variance) {
+					return x + variance - 2 * rand(variance);
+				}
+				
+    </script>
+  </head>
+	<body onload="setup()">
+  </body>
+</html>
+

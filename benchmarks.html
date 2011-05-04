@@ -1,0 +1,180 @@
+<!DOCTYPE html >
+<!--
+	http://proceduralgraphics.blogspot.com
+	
+	By Dave Lawrence on 24/4/2010
+	
+	Optimisations:
+	draw boids to a canvas, then blit that across instead of using trig
+	
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  	<style>
+    	html,body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
+		</style>
+		<title></title>
+    <script type="text/javascript" src="util.js"></script>
+    <script type="text/javascript" src="drawing.js"></script>
+    <script type="text/javascript">
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+				var fps = 10;
+        var ctx;
+				var sky;
+				var bird;
+
+				// write out canvas as we have to put width/height inline in the HTML, CSS will just scale pixels
+        document.write('<canvas id="canvas" width=' + width + ' height=' + height + '></canvas>');
+
+        function setup() {
+            ctx = document.getElementById("canvas").getContext("2d");
+						sky = newCanvas(width, height);
+						drawBackground(sky.getContext("2d"));
+						perlin_noise(sky);
+
+						var birdSize = 200;
+						var func = function(ctx) {
+							ctx.scale(200, 200);
+							drawBird(ctx, fill);
+						}
+						bird = shapeToCanvas(200, 200, rgba(0,0,0,0), "#000000", func);
+
+						//setInterval(draw, 1000 / fps);
+						//draw();
+						
+						ctx.drawImage(sky, 0, 0);
+        		var startTime = new Date();
+						var BIRDS = 100;
+
+						for (var i=0 ; i<BIRDS ; ++i) {
+							ctx.save();
+							ctx.translate(rand(width), rand(height));
+							ctx.rotate(rand(2*Math.PI));
+							ctx.drawImage(bird, 200, 200);
+							ctx.restore();
+						}
+
+						var timeTaken = new Date().getTime() - startTime.getTime();						
+						var bitmapTime = timeTaken / BIRDS;
+						
+////////////////////////
+						ctx.drawImage(sky, 0, 0);
+        		startTime = new Date();
+						ctx.fillStyle = "#FF0000";
+
+						for (var i=0 ; i<BIRDS ; ++i) {
+							ctx.save();
+							ctx.translate(rand(width), rand(height));
+							ctx.rotate(rand(2*Math.PI));
+							ctx.scale(200, 200);
+							drawBird(ctx, fill);
+							//ctx.drawImage(bird, 200, 200);
+							ctx.restore();
+						}
+
+						var timeTaken = new Date().getTime() - startTime.getTime();						
+						var curveTime = timeTaken / BIRDS;
+
+						alert('bitmap time = ' + bitmapTime + ' curve time = ' + curveTime);
+
+				}
+
+				function drawBackground(ctx) {
+					  ctx.fillStyle = "#0000FF";
+					  ctx.fillRect(0,0,width,height);
+				}
+
+
+				function draw() {
+						ctx.drawImage(sky, 0, 0);
+						ctx.drawImage(bird, 500, 500);
+
+						drawMain();
+				}
+
+
+				function drawMain() {
+					//perlin_noise(document.getElementById("canvas"));					
+					for (var i=0 ; i<1 ; ++i) {
+						ctx.save();
+						//ctx.translate(width/2, height/2);
+						ctx.translate(rand(width), rand(height));
+						ctx.scale(50, 50);
+	
+
+						ctx.restore();
+					}
+				}
+
+				function drawBird(ctx, op) {
+						ctx.lineWidth = 0.005;
+
+						var bird = [
+							[.02, -0.3425, .015, -.31],
+							[.06, -.28, .05, -.2],
+							[.2,  -.35, .5,  .25],
+							[.2, -.15, .05, -.075],
+							[.045, .1, .045, .1],
+							[.06, .2, .14, .375],
+							[0.02, .2, 0, .125]
+						];
+
+						var drawBirdSide = function() {
+							ctx.moveTo(0, -.375);
+							for (var i=0 ; i<bird.length ; ++i) {
+								var curve = bird[i];
+								ctx.quadraticCurveTo(curve[0], curve[1], curve[2], curve[3]);
+								//ctx.quadraticCurveTo(bird[i][0], bird[i][1], bird[i][2], bird[i][3]);
+							}
+						}
+
+						ctx.beginPath();
+						drawBirdSide();
+				  	ctx.transform(-1, 0, 0, 1, 0, 0); // mirror
+						drawBirdSide();
+						op(ctx);
+				}
+
+
+				// Based on code by iron_wallaby posted at http://www.ozoneasylum.com/30982
+				// but I changed the noise to be white with random transparency for a cloud like effect
+				function perlin_noise (canvas) {
+				  var canvas_ctx = canvas.getContext ("2d");
+				  var saved_alpha = canvas_ctx.globalAlpha;
+				  var offscreen = newCanvas(canvas.width, canvas.height);
+				  var offscreen_ctx = offscreen.getContext ("2d");
+				  var offscreen_id = offscreen_ctx.getImageData (0, 0,
+				                                                 offscreen.width,
+				                                                 offscreen.height);
+				  var offscreen_pixels = offscreen_id.data;
+				  for (var i = 0; i < offscreen_pixels.length; i += 4) {
+				    offscreen_pixels[i    ] = 255;
+				    offscreen_pixels[i + 1] = 255;
+				    offscreen_pixels[i + 2] = 255;
+				    offscreen_pixels[i + 3] = irand(255);
+				  }
+				
+				  offscreen_ctx.putImageData (offscreen_id, 0, 0);
+
+				  /* Scale random iterations onto the canvas to generate Perlin noise. */
+				  for (var size = 4; size <= offscreen.width; size *= 2) {
+				    var x = irand(offscreen.width - size);
+				    var y = irand(offscreen.height - size);
+
+						y = Math.max(y, 0);
+						var verticalSize = Math.min(size,offscreen.height);
+
+				    canvas_ctx.globalAlpha = 4 / size;
+				    canvas_ctx.drawImage (offscreen, x, y, size, verticalSize,
+				                                     0, 0, canvas.width, canvas.height);
+				  }
+				  canvas_ctx.globalAlpha = saved_alpha;
+				}
+    </script>
+  </head>
+	<body onload="setup()">
+
+  </body>
+</html>
+

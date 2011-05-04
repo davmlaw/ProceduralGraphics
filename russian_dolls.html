@@ -1,0 +1,159 @@
+<!DOCTYPE html >
+<!--
+	http://proceduralgraphics.blogspot.com
+	
+	By Dave Lawrence on 8/4/2010
+
+TODO:
+
+-kaelidoscope into canvas then copy that each time (much faster)
+-make initialise using map, random picker for multiple versions of each component
+-different shawl (eg frills, different joins etc), buckle instead of tie/bow
+-make randomPattern generate a pattern, and getRandomPatternDrawable() or something
+
+patterns:
+-feather
+-leaves
+-flower from the side/stem etc
+-snowflake
+-kaelidoscope of petals, leaves, fruit etc
+-lsystem?
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  	<style>
+    	html,body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
+		</style>
+		<title></title>
+    <script type="text/javascript" src="util.js"></script>
+    <script type="text/javascript" src="shapes.js"></script>
+    <script type="text/javascript" src="drawing.js"></script>
+    <script type="text/javascript" src="patterns.js"></script>
+    <script type="text/javascript" src="doll.js"></script>
+    <script type="text/javascript">
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+				var midPoint = { x: Math.floor(width/2), y: Math.floor(height/2) };
+				var fps = 10;
+				var dolls = [];
+				var bgCanvas;
+				var cycle = 0;
+				var topDoll, midDoll, botDoll;
+
+				var nextFrame;
+
+				// write out canvas as we have to put width/height inline in the HTML, CSS will just scale pixels
+        document.write('<canvas id="canvas" width=' + width + ' height=' + height + '></canvas>');
+
+        function setup() {
+						dolls.push(dollFactory());
+						dolls.push(dollFactory());
+						createZoomDolls(dolls, width, height);
+
+						var aspect = width / height;
+						var numRows = 4 + irand(6);
+						var numCols = Math.floor(numRows * aspect);
+						bgCanvas = newCanvas(width, height);
+						var bgCtx = bgCanvas.getContext("2d");
+						drawMultiple(bgCtx, numRows, numCols);
+
+            var ctx = document.getElementById("canvas").getContext("2d");
+						setInterval(function() { update(ctx); }, 1000 / fps);
+				}
+				
+				function update(ctx) {
+						drawBackgroundFromCanvas(ctx, bgCanvas);
+						drawZoomDolls(ctx, width, height);
+						
+						cycle += 0.03;
+						if (cycle > 1) {
+							cycle = 0;
+							dolls.shift();
+							dolls.push(dollFactory());
+							createZoomDolls(dolls, width, height);
+						}
+				}
+
+				function drawMultiple(ctx, numRows, numCols) {
+					var buffer = newCanvas(Math.floor( width / numCols ), Math.floor( height / numRows ));
+					var ctx2 = buffer.getContext("2d");
+
+					for (var row=0 ; row < numRows ; ++row) {
+						for (var col=0 ; col < numCols ; ++col) {
+							var doll = dollFactory();
+
+							drawSolidBackground(ctx2, buffer.width, buffer.height, randomColor());
+							drawForeground(ctx2, buffer.width, buffer.height, doll);
+							
+							ctx.drawImage(buffer, col * buffer.width, row * buffer.height);
+						}
+					}
+				}
+
+				function drawSolidBackground(ctx, width, height, fillStyle) {
+					  ctx.fillStyle = fillStyle;
+					  ctx.fillRect(0,0,width,height);
+				}
+
+				function drawBackgroundFromCanvas(ctx, bg) {
+					ctx.drawImage(bg, 0, 0);
+				}
+
+				function drawForeground(ctx, width, height, doll) {
+					ctx.save();
+					ctx.translate(Math.floor(width/2), Math.floor(height/2));
+					var size = height * .8;
+					ctx.scale(size, size);
+					doll.draw(ctx);
+					ctx.restore();
+				}
+
+				function createZoomDolls(dolls, width, height) {
+					topDoll = new Drawable();
+					topDoll.clipFunc = topOnlyMask;
+					topDoll.children.push(dolls[0]);
+					topDoll.x = midPoint.x;
+					topDoll.y = midPoint.y;
+
+					botDoll = new Drawable();
+					botDoll.clipFunc = bottomOnlyMask;
+					botDoll.children.push(dolls[0]);
+					botDoll.x = midPoint.x;
+					botDoll.y = midPoint.y;
+
+					midDoll = new Drawable();
+					midDoll.children.push(dolls[1]);
+					midDoll.x = midPoint.x;
+					midDoll.y = midPoint.y;
+				}
+
+
+				function drawZoomDolls(ctx, width, height) {
+					topDoll.y = midPoint.y - height/2 * cycle;
+					botDoll.y = midPoint.y + height/2 * cycle;
+
+					var size = height * .8 * (1 + cycle);
+					topDoll.scale = size;
+					botDoll.scale = size;
+					midDoll.scale = size/2;
+					
+					ctx.save();
+					midDoll.draw(ctx);
+					ctx.restore();
+
+					ctx.save();
+					topDoll.draw(ctx);
+					ctx.restore();
+
+					ctx.save();
+					botDoll.draw(ctx);
+					ctx.restore();
+				}
+    </script>
+  </head>
+	<body onload="setup()">
+
+  </body>
+</html>
+
