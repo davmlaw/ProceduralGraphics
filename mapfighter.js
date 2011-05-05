@@ -186,6 +186,7 @@ function setupWorld() {
 				me.radius = 10;
 				me.x_v = 0;
 				me.y_v = 0;
+				me.heading = 0;
 				me.image = randomPick(explosions);
 				me.draw = drawCenteredImage;
 				me.updaters = []; // stop!
