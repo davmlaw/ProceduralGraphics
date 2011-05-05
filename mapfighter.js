@@ -1,10 +1,34 @@
 /*	By Dave Lawrence on 26/8/2010
- *	http://proceduralgraphics.blogspost.com
+	http://proceduralgraphics.blogspost.com
 
-generate a list of explosions
-	-randomly pick one to draw so we have variety but don't have to regen each time (slow)
-	-store the explosion ref in each explosion
- 
+    NOTE: This is a prototype written in a few hours for a game competition due in 4 days
+
+    The code is a mess, but I have decided to make a feature complete prototype ASAP
+    and only then allow myself to refactor later.
+
+    TODO:
+
+    GRAPHICS
+    -Explosion effects
+    -Plane shoot down effects
+    -Draw Perlin Noise clouds over top of map while loading, then clear
+    -Better buffering of google maps, perhaps have part of the map canvas offscreen?
+
+    GAME
+    -"launcher" screen where you select where you have to bomb (ie address entry) or just use geolocation
+    -know about target being bombed for win conditions
+    -1942 and Zone66 (current) type movements, and the switch between them
+    -Lives / deaths on collisions etc
+    -Store target lat/long etc in URL so that people can send links for games they have created
+
+    WEAPONS
+    -Different weapons
+
+    ENEMIES
+    -Lots of different enemies
+    -Enemies shoot
+    -AI
+    -Placement / generation (eg appear offscreen, get culled) 
  
  */
 
