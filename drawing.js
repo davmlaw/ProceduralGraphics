@@ -235,3 +235,8 @@ function circle_alpha(canvas, fadeFactor) {
 	canvas_ctx.putImageData (canvas_id, 0, 0);
 }
 
+function drawImages(images) {
+	for (var i=0 ; i<images.length ; ++i) {
+		ctx.drawImage(images[i], 0, 0, images[i].width, images[i].height);
+	}
+}

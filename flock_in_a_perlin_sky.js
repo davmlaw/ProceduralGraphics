@@ -7,11 +7,7 @@ var width = window.innerWidth;
 var height = window.innerHeight;
 var ctx;
 var background;
-
-var boids = [];
-var maxVelocity = 6;
-var numBoids = 20;
-
+var boidSimulation = new BoidSimulation(20, 300);
 
 function setup() {
 		var canvas = newCanvas(width, height);
@@ -28,32 +24,16 @@ function setup() {
 		};
 		perlin_noise(background, whiteClouds);
 
-		for(var i = 0; i < numBoids; i++) {
-			boids.push(new Boid(rand(width), rand(height), 5));
-		}
-
-		setInterval(function() { update(); draw(); }, 100);
+		setInterval(function() { boidSimulation.update(); draw(); }, 100);
 }
-
-function update() {
-		for(var i = 0; i < numBoids; i++) {
-			boids[i].moveWith(boids, 300);
-			boids[i].moveCloser(boids, 300);					
-			boids[i].moveAway(boids, 15);	
-		}
-		
-		for(var i = 0; i < numBoids; i++) {
-			boids[i].move();
-		}
-}
-
 
 function draw() {
 		ctx.save();
 		ctx.drawImage(background, 0, 0);
-
 		ctx.fillStyle = "#000000";
-		for(var i = 0; i < numBoids; i++) {
+		
+		var boids = boidSimulation.boids;
+		for(var i = 0; i < boids.length ; i++) {
 			ctx.save();
 			ctx.translate(boids[i].x, boids[i].y);
 			ctx.rotate(Math.PI/2 + boids[i].getHeading());
@@ -89,7 +69,7 @@ function drawBird(ctx, op) {
 
 		ctx.beginPath();
 		drawBirdSide();
-  	ctx.transform(-1, 0, 0, 1, 0, 0); // mirror
+		ctx.transform(-1, 0, 0, 1, 0, 0); // mirror
 		drawBirdSide();
 		op(ctx);
 }

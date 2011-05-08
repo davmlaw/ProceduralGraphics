@@ -7,15 +7,50 @@
     and only then allow myself to refactor later.
 
     TODO:
+	-enemy generators that generate as you come in
+	-explosions for enemies
 
+
+	-be able to attach to something that removes when you are outside of boundary.
+	-boundary can be absolute or around player
+	-called per frame it goes
+	-refactor include list into javascript
+	
+LAUNCHER SCREEN
+
+-"launcher" screen where you select where you have to bomb (ie address entry) or just use geolocation
+
+Store in URL:
+
+function gup( name )
+{
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+
+
+	
+	-birds
+		-make constraint an option for simulation
+	-bird launcher
+	-clouds fade away
+	
     GRAPHICS
+	-clouds move
+	-bullets look better
+	-bombs look better
     -Explosion effects
     -Plane shoot down effects
-    -Draw Perlin Noise clouds over top of map while loading, then clear
     -Better buffering of google maps, perhaps have part of the map canvas offscreen?
 
     GAME
-    -"launcher" screen where you select where you have to bomb (ie address entry) or just use geolocation
     -know about target being bombed for win conditions
     -1942 and Zone66 (current) type movements, and the switch between them
     -Lives / deaths on collisions etc
@@ -40,10 +75,12 @@ var width = 800;
 var height = 600;
 var PLANE_RADIUS = 50;
 var entities = [];
+var underlays = [];
+var overlays = [];
 var offset = { x: 0, y: 0 };
 var ctx;
 var map;
-var explosions = [];
+var explosionFactory;
 
 var p38 = new Image();
 p38.src = "p38.png";
@@ -75,16 +112,32 @@ var applyThrust = function(me, time) {
 	me.y_v = -Math.cos(me.heading) * amt;
 }
 
+var countdown = function(func, msecs) {
+	var timeLeft = msecs;
+	return function(me,time) {
+		timeLeft -= time;
+		if (timeLeft < 0) {
+			func(me,time);
+		}
+	}
+}
 
-var player = new Particle(width/2, height/2, '#11FF33');
+var player;
 
 function setup() {
+	setupDocument();
+	setupWorld();
+
+	var time = 50;
+	var intervalId = setInterval(function() { update(time); draw(time); }, time);
+}
+
+function setupDocument() {
 	setupOverlapping("main-stage");
 	setupControls();
 	setupBackground();
 	setupCanvas();
 	setupInput();
-	setupWorld();
 }
 
 function setupControls() {
@@ -110,7 +163,7 @@ function setupControls() {
 }
 
 function setupBackground() {
-	document.getElementById("map_canvas").style.backgroundColor = "#11ee11";
+	document.getElementById("map_canvas").style.backgroundColor = "#00FF00"; //"#ffffff";
 	attachGoogleMapsScript("initialize");
 }
 
@@ -118,8 +171,6 @@ function setupCanvas() {
 		var canvas = newCanvas(width, height);
 		document.getElementById("canvas").appendChild(canvas);
 	 	ctx = canvas.getContext("2d");
-		var time = 50;
-		var intervalId = setInterval(function() { update(time); draw(time); }, time);
 }
 
 function changeRadius(perSecondMultiplier) {
@@ -142,6 +193,9 @@ function setupWorld() {
 	var midx = width/2;
 	var midy = height/2;
 
+	explosionFactory = new ExplosionFactory()	
+
+	player = new Entity(width/2, height/2, '#11FF33');
 	player.radius = PLANE_RADIUS;
 	player.heading = 0;
 	player.reloadTime = 0;
@@ -151,11 +205,10 @@ function setupWorld() {
 	player.image = p38;
 	player.draw = drawCenteredImage;
 	player.collide = function() { }; // invunerable!
-	player.thrust = 10;
+	player.thrust = 3000;
 	player.age = 0;
 
 	var fireWeapon = function(me, time) {
-
 		// Machine Gun
 		me.machineGunreloadTime -= time;
 		if (me.machineGunfiring && me.machineGunreloadTime <= 0) {
@@ -164,9 +217,9 @@ function setupWorld() {
 			var bitToSide = getXYFromVector(me.heading + Math.PI/2, PLANE_RADIUS * .5);
 			
 			// shoot
-			var weaponSpeed = 2;
+			var weaponSpeed = 300;
 			for (var i=0 ; i<2 ; ++i) {
-				var p = new Particle(me.x + bitInFront.x, me.y + bitInFront.y, "#ffff00");
+				var p = new Entity(me.x + bitInFront.x, me.y + bitInFront.y, "#ffff00");
 				if (i%2) {
 					p.x += bitToSide.x;
 					p.y += bitToSide.y;
@@ -177,6 +230,11 @@ function setupWorld() {
 				p.radius = BULLET_RADIUS;
 				p.x_v = Math.sin(me.heading) * weaponSpeed;
 				p.y_v = -Math.cos(me.heading) * weaponSpeed;
+
+				var remove = function(me,time) {
+					me.active = false;
+				}
+				p.addUpdater(countdown(remove, 2000));
 				entities.push(p);
 			}
 			me.machineGunreloadTime = 300;
@@ -187,7 +245,7 @@ function setupWorld() {
 			var BULLET_RADIUS = 7;
 			// shoot
 			var weaponSpeed = -.1;
-			var p = new Particle(me.x, me.y, "#aaaaaa");
+			var p = new Entity(me.x, me.y, "#aaaaaa");
 			p.clip = false;
 			p.radius = BULLET_RADIUS;
 			p.x_v = me.x_v + Math.sin(me.heading) * weaponSpeed;
@@ -195,26 +253,15 @@ function setupWorld() {
 			entities.unshift(p); // front of list to get under the player
 			me.reloadTime = 500;
 
-			var countdown = function(func, msecs) {
-				var timeLeft = msecs;
-				return function(me,time) {
-					timeLeft -= time;
-					if (timeLeft < 0) {
-						func(me,time);
-					}
-				}
-			}
-
 			var explode = function(me,time) {
 				me.color = "#ffaaaa";
 				me.radius = 10;
 				me.x_v = 0;
 				me.y_v = 0;
 				me.heading = 0;
-				me.image = randomPick(explosions);
+				me.image = explosionFactory.randomExplosion();
 				me.draw = drawCenteredImage;
-				me.updaters = []; // stop!
-				//entities.remove(me);
+				me.updaters = []; // stop doing anything
 			}
 			
 			p.addUpdater(changeRadius(.9));
@@ -224,21 +271,22 @@ function setupWorld() {
 		
 	}
 	player.addUpdater(fireWeapon);
+	player.addUpdater(applyFriction);	
 	player.addUpdater(applyThrust);	
 	entities.push(player);
 
 	for (var i=0 ; i<50 ; ++i) {
-		var enemy = new Particle(vary(midx, width * 3), vary(midy, height * 3), '#FFFFFF');
+		var enemy = new Entity(vary(midx, width * 3), vary(midy, height * 3), '#FFFFFF');
 		enemy.radius = PLANE_RADIUS;
 		enemy.image = zero;
 		enemy.draw = drawCenteredImage;
-		enemy.x_v = vary(0,1);
-		enemy.y_v = vary(0,1);
+		enemy.x_v = 0;
+		enemy.y_v = 0;
 		enemy.age = 0;
 		
 		enemy.addUpdater(applyFriction);
 		enemy.heading = 0;
-		enemy.thrust = 5;
+		enemy.thrust = 1000;
 		
 		var flyInCircle = function(me, time) {
 			me.heading += .08;
@@ -265,45 +313,28 @@ function setupWorld() {
 			console.log('x_v = ' + me.x_v + 'y_v = ' + me.y_v);
 		}
 		enemy.addUpdater(printStuff);
-*/
-		
+*/	
 		entities.push(enemy);
 	}
 
-	for (var i=0 ; i<5 ; ++i) {
-		explosions.push(generateExplosion());
-	}
-	
-}
-
-function generateExplosion() {
-	var explosion = newCanvas(EXPLOSION_SIZE, EXPLOSION_SIZE);
-	explosion_ctx = explosion.getContext("2d");
-	var DRAW_GROUND = true;
-	if (DRAW_GROUND) {
-		
-		var groundColor = function() {
-			return [181, 109, 16, irand(255)];
-		}
-		for (var i=0 ; i<3 ; ++i) {
-			var ground = newCanvas(EXPLOSION_SIZE, EXPLOSION_SIZE);
-			perlin_noise(ground, groundColor);
-			circle_alpha(ground);
-			var ox = (explosion.width - ground.width)/2;
-			var oy = (explosion.height - ground.height)/2;
-			explosion_ctx.drawImage(ground, ox, oy, ground.width, ground.width);
-		}
-	}
-	var black = function() {
-			return [0,0,0, irand(255)];
+	/*
+	// Create cloud underlay
+	var clouds = newCanvas(width, height);
+	var whiteClouds = function() {
+			return [255, 255, 255, irand(255)];
 	};
-	var scortchMark = newCanvas(EXPLOSION_SIZE, EXPLOSION_SIZE);
-	perlin_noise(scortchMark, black);
-	circle_alpha(scortchMark);
-	var ox = (explosion.width - scortchMark.width)/2;
-	var oy = (explosion.height - scortchMark.height)/2;
-	explosion_ctx.drawImage(scortchMark, ox, oy, scortchMark.width, scortchMark.width);
-	return explosion;
+	var greyClouds = function() {
+			return [55, 55, 55, irand(255)];
+	};
+	perlin_noise(clouds, greyClouds);
+	underlays.push(clouds);
+
+
+	// create boid simulation
+	boidSimulation = new BoidSimulation(10, 300);
+		*/
+	// a way to draw this stuff, then have it be removed?
+	
 }
 
 var key_fire = false;
@@ -317,11 +348,14 @@ function update(time) {
 		player.heading += .1;
 	}
 	player.firing = key_fire;
+
+	var seconds = time / 1000.0;
+	var pan = { x: player.x_v * seconds, y: player.y_v * seconds };
+	//var pan = getXYFromVector(player.heading, player.thrust);
 	
-	var pan = getXYFromVector(player.heading, player.thrust);
 	// FIXME: Shoudl we do some to-integer stuff here so floats don't happen?
-	pan.x = Math.round(pan.x);
-	pan.y = Math.round(pan.y);
+//	pan.x = Math.round(pan.x);
+//	pan.y = Math.round(pan.y);
 
 	offset.x -= pan.x;
 	offset.y -= pan.y;
@@ -332,16 +366,23 @@ function update(time) {
 		map.panBy(pan.x, pan.y);
 	}
 	
-	var seconds = 1000.0 / time;
-
+	var seconds = time / 1000.0;
+//	console.log('seconds = ' + seconds);
+	
 	for(var i=0 ; i<entities.length ; ++i) {
 		var p = entities[i];
 		if (p.active) {
 			p.x += p.x_v * seconds;
 			p.y += p.y_v * seconds;
+		} else {
+			entities.splice(i,1);
 		}
 	}
 
+	// Update these things
+	//boidSimulation.update();
+	
+	//console.log('entities = ' + entities.length);
 	
 	for(var i=0 ; i<entities.length ; ++i) {
 		var p = entities[i];
@@ -362,68 +403,14 @@ function update(time) {
 	}
 }
 
-/*
-function doExplosion(time) {
-	for (var i = 0 ; i<explosions.length ; ++i) {
-		ctx.drawImage(explosions[i], width/(explosions.length/i), 0, explosions[i].width, explosions[i].height);
-	}
-}
-*/
-
 function draw(time) {
 	ctx.clearRect(0,0,width,height);
 	ctx.save();
+	drawImages(underlays);
 	drawentities(time, entities);
+	drawImages(overlays);
 	ctx.restore();
 }
-
-function Particle(x, y, color) {
-	this.x = x;
-	this.y = y;
-	this.x_v = 0;
-	this.y_v = 0;
-	this.color = color;
-	this.radius = 1;
-	this.active = true;
-	this.clip = true;
-	this.updaters = [
-
-	];
-	this.addUpdater = function(u) {
-		this.updaters.push(u);
-	};
-	this.update = function(time) {
-		for (var i=0 ; i<this.updaters.length ; ++i) {
-			this.updaters[i](this,time);
-		}
-	}
-	this.collide = function(otherP) {
-		this.active = false;
-	}
-	this.draw = function(ctx, time) {
-		ctx.fillStyle = this.color;
-		ctx.beginPath();
-		ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI, true);
-		ctx.fill();
-	}
-}
-
-
-function drawentities(time, entities) {
-		ctx.save();
-		ctx.translate(offset.x, offset.y);
-		for(var i=0 ; i<entities.length ; ++i) {
-			var p = entities[i];
-			if (p.active) {
-				entities[i].draw(ctx, time);
-			}
-		}
-		ctx.restore();
-}
-
-
-
-
 
 function initialize() {
 	var myLatlng = new google.maps.LatLng(-34.911555,138.600082);
@@ -441,9 +428,14 @@ function initialize() {
 	map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 }
 
-function attachGoogleMapsScript(callback) {
+function attachScript(scriptName) {
 	var script = document.createElement("script");
 	script.type = "text/javascript";
-	script.src = "http://maps.google.com/maps/api/js?sensor=false&callback=" + callback;
+	script.src = scriptName;
 	document.body.appendChild(script);
+}
+
+
+function attachGoogleMapsScript(callback) {
+	attachScript("http://maps.google.com/maps/api/js?sensor=false&callback=" + callback);
 }
