@@ -24,7 +24,7 @@ function setup() {
 		};
 		perlin_noise(background, whiteClouds);
 
-		setInterval(function() { boidSimulation.update(); draw(); }, 100);
+		setInterval(function() { boidSimulation.update(); draw(); }, 50);
 }
 
 function draw() {
