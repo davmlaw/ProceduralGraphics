@@ -76,14 +76,17 @@ function drawMain(ctx) {
 			var p = args.ctx.getCoords(0, 0);
 			var numLeaves = vary(2,1);
 			for (var i=0 ; i<numLeaves ; ++i) {
-				var leaf = new Leaf(vary(p.x, 10), vary(p.y, 10), 0, randomPick(leafColors));
+				var leaf = new Leaf(vary(p.x, 10), vary(p.y, 10), 0, randomPick(leafColors), vary(args.ground, 5));
 				leaves.push(leaf);
 			}
 		}
 
 		for (var i=0 ; i<5 ; ++i) {
+			var x = width * vary(.5, .4);
+			var y = height * vary(.75, .2);
+			args.ground = y;
 			ctx.save();
-			ctx.translate(width * vary(.5, .4), height * vary(.75, .2));
+			ctx.translate(x, y);
 			ctx.rotate(Math.PI);
 			drawLSystem(args, handler);
 			ctx.restore();
@@ -94,13 +97,12 @@ function drawLeaves() {
 		for(var i=0 ; i<leaves.length ; ++i) {
 			var leaf = leaves[i];
 			if (leaf.active) {
-				// detatch
 				if (leaf.attached) {
 					if (odds(.01)) {
 						leaf.attached = false;
 						leaf.y_v = 1.5;
 					}
-				} else {
+				} else if (leaf.y < leaf.ground) {
 					// wind effect
 					leaf.x_v = vary(leaf.x_v, 1);
 					leaf.x_v = Math.max(leaf.x_v, -1.5);
@@ -109,26 +111,21 @@ function drawLeaves() {
 					// move
 					leaf.x += leaf.x_v;
 					leaf.y += leaf.y_v;
-				}			
-
-				if (leaf.y - leaf.radius > height) {
-					leaf.active = false;
-				} else {
-					// draw
-					leaves[i].draw(ctx);
 				}
+				leaves[i].draw(ctx);
 			}
 		}
 }
 
 
-function Leaf(x, y, angle, color) {
+function Leaf(x, y, angle, color, ground) {
 	this.x = x;
 	this.y = y;
 	this.x_v = 0;
 	this.y_v = 0;
 	this.angle = angle;
 	this.color = color;
+	this.ground = ground;
 	this.radius = 3.5;
 	this.active = true;
 	this.attached = true;
