@@ -41,8 +41,8 @@ var lsysTypes = {
 
 var viewPortWidth = window.innerWidth - 40;
 var viewPortHeight = window.innerHeight * .7;
-var width = 2000;
-var height = 2000;
+var width = 4000;
+var height = 3000;
 var DEFAULT_ITERATIONS = 4;
 var ctx;
 var selectLsys;
