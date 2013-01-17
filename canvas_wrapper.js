@@ -74,18 +74,21 @@ cwPrototype.moveTo = function (aX, aY) {
   this.currentY_ = p.y;
 };
 cwPrototype.lineTo = function (aX, aY) {
+  this.applyContextProperties();
   this.canvas.lineTo(aX, aY);
   var p = this.getCoords(aX, aY);
   this.currentX_ = p.x;
   this.currentY_ = p.y;
 };
 cwPrototype.bezierCurveTo = function (aCP1x, aCP1y, aCP2x, aCP2y, aX, aY) {
+  this.applyContextProperties();
   this.canvas.bezierCurveTo(aCP1x, aCP1y, aCP2x, aCP2y, aX, aY);
   var p = this.getCoords(aX, aY);
   this.currentX_ = p.x;
   this.currentY_ = p.y;
 };
 cwPrototype.quadraticCurveTo = function (aCPx, aCPy, aX, aY) {
+  this.applyContextProperties();
   this.canvas.quadraticCurveTo(aCPx, aCPy, aX, aY);
   var p = this.getCoords(aX, aY);
   this.currentX_ = p.x;
@@ -117,9 +120,11 @@ cwPrototype.fillRect = function (aX, aY, aWidth, aHeight) {
   this.currentY_ = p.y;
 };
 cwPrototype.createLinearGradient = function (aX0, aY0, aX1, aY1) {
+  this.applyContextProperties();
   return this.canvas.createLinearGradient(aX0, aY0, aX1, aY1);
 };
 cwPrototype.createRadialGradient = function (aX0, aY0, aR0, aX1, aY1, aR1) {
+  this.applyContextProperties();
   return this.canvas.createRadialGradient(aX0, aY0, aR0, aX1, aY1, aR1);
 };
 cwPrototype.stroke = function (aFill) {
