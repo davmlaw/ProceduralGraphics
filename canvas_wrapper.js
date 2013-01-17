@@ -135,6 +135,9 @@ cwPrototype.fill = function () {
   this.applyContextProperties();
   this.canvas.fill();
 }
+cwPrototype.clearRect = function (aX, aY, aWidth, aHeight) {
+  this.canvas.clearRect(aX, aY, aWidth, aHeight);
+}
 cwPrototype.closePath = function () {
   this.canvas.closePath();
 };
