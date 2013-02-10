@@ -178,6 +178,15 @@ function setM(ctx, m) {
   }
   ctx.m_ = m;
 }
+
+cwPrototype.setMatrix = function(matrix) {
+  this.setTransform(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1], matrix[2][0], matrix[2][1]);
+}
+
+cwPrototype.getMatrix = function() {
+  return this.m_
+}
+
 cwPrototype.translate = function (aX, aY) {
   this.canvas.translate(aX, aY);
   var m1 = [
