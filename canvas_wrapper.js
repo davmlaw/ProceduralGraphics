@@ -127,9 +127,14 @@ cwPrototype.createRadialGradient = function (aX0, aY0, aR0, aX1, aY1, aR1) {
   this.applyContextProperties();
   return this.canvas.createRadialGradient(aX0, aY0, aR0, aX1, aY1, aR1);
 };
-cwPrototype.stroke = function (aFill) {
+cwPrototype.stroke = function (aPath) {
   this.applyContextProperties();
-  this.canvas.stroke(aFill);
+  if (aPath) {
+	this.canvas.stroke(aPath);
+  } else {
+	this.canvas.stroke();
+  }
+
 };
 cwPrototype.fill = function () {
   this.applyContextProperties();
